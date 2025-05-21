@@ -32,8 +32,7 @@ agg_funcs = {
 }
 
 df = df.groupby('Institution_Name').agg(agg_funcs).reset_index()
-# Preprocessing by removing the nulls
-df = df.dropna ()
+
 
 policy_brackets = [
     {'streams': 1, 'enr_min': 0, 'enr_max': 180, 'cbe': 9},
