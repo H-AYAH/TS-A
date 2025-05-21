@@ -91,7 +91,7 @@ def get_admin_count (num_classes):
       return {'DeputyPrincipals': 2, 'SeniorMasters': 9}
 
 
-# calculating the shortfall  from admin load
+# Calculating the shortfall  from admin load
 def calculate_admin_shortfall(num_admins, lessons_allocated_per_admin, expected_load_per_admin = 27):
   total_expected  = num_admins * expected_load_per_admin
   shortfall       = (total_expected - lessons_allocated_per_admin) /  27
@@ -124,30 +124,74 @@ def calculate_total_teachers(enrollment):
 
     return math.ceil(teachers_required), streams
 
-def calculate_subject_shortage_full_output(school_row):
-    # Safely extract enrollment
-    enrollment_list = school_row['TotalEnrolment']
-    if isinstance(enrollment_list, list):
-        if isinstance(enrollment_list[0], list):
-            enrollment = enrollment_list[0][0]
-        else:
-            enrollment = enrollment_list[0]
-    else:
-        enrollment = enrollment_list
-    # Fallback in case of missing/NaN
-    if pd.isna(enrollment):
-        enrollment = 0
-    # Estimate streams
-    streams = math.ceil(enrollment / 45)
-    # Policy required teachers per subject
-    required_teachers = {
-        subject: math.ceil(streams * load)
-        for subject, load in subject_teacher_per_class.items()
-    }
-    # Flatten major/minor subjects
-    major_subjects = school_row['MajorSubject']
-    minor_subjects = school_row['MinorSubject']
-    if major_subjects and isinstance(major_subjects[0], list):
+def calculate_subject_shortage_full_output(school_row, debug=False):
+    try:
+        # Debugging line to see the row data (only if debug is True)
+        if debug:
+            st.write("Processing row:", school_row)
+
+        # Safely extract enrollment
+        enrollment = school_row['TotalEnrolment']
+        
+        # Fallback in case of missing/NaN
+        if pd.isna(enrollment):
+            enrollment = 0
+
+        # Estimate streams
+        streams = math.ceil(enrollment / 45)
+
+        # Policy required teachers per subject
+        required_teachers = {
+            subject: math.ceil(streams * load)
+            for subject, load in subject_teacher_per_class.items()
+        }
+
+        # Flatten major/minor subjects
+        major_subjects = school_row['MajorSubject']
+        minor_subjects = school_row['MinorSubject']
+
+        # Ensure major_subjects and minor_subjects are lists
+        if isinstance(major_subjects, str):
+            major_subjects = [major_subjects]
+        if isinstance(minor_subjects, str):
+            minor_subjects = [minor_subjects]
+
+        # Count occurrences of major and minor subjects
+        major_counts = Counter(major_subjects)
+        minor_counts = Counter(minor_subjects)
+        all_subjects = major_counts + minor_counts
+        actual_counts = dict(Counter(all_subjects))
+
+        # Calculate shortages and prepare a recommendation
+        shortages = {}
+        recommendations = []
+
+        for subject, required in required_teachers.items():
+            actual = actual_counts.get(subject, 0)
+            shortage = math.ceil(required - actual)
+            if shortage > 0:
+                recommendations.append(f"{int(shortage)} {subject}")
+            shortages[subject] = shortage
+
+        # Assemble full output
+        output = {
+            "Institution_Name": school_row["Institution_Name"],
+            "Enrollment": enrollment,
+            "TOD": int(school_row['TOD']) if not pd.isna(school_row['TOD']) else 0,
+            "PolicyCBE": get_policy_cbe(enrollment),
+            "LikelyStreams": calculate_likely_streams(get_policy_cbe(enrollment)),
+            "ActualTeachers": actual_counts,
+            "SubjectShortages": shortages,
+            "Recommendation": "Recruit " + ", ".join(recommendations) if recommendations else "No recruitment needed"
+        }
+
+        return pd.Series(output)
+
+    except Exception as e:
+        st.write(f"Error processing row: {school_row}")
+        st.write(e)
+        return pd.Series()  # Return an empty Series or handle as needed
+
 
 subject_shortages_df = df.apply(calculate_subject_shortage_full_output, axis=1)
 subject_shortages_df['Institution_Name'] = df['Institution_Name']
