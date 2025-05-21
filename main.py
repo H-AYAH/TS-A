@@ -9,7 +9,29 @@ import math
 
 csv_url = "https://raw.githubusercontent.com/H-AYAH/Teachershortage-app/main/SchoolsSecondary_11.csv"
 df = pd.read_csv(csv_url)
-df = df.groupby('Institution_Name').agg(list).reset_index()
+
+
+# If columns contain lists (e.g., from reading CSV with object dtype), flatten them
+for col in ['MajorSubject', 'MinorSubject']:
+    df[col] = df[col].apply(lambda x: x[0] if isinstance(x, list) else x)
+
+# Ensure numeric fields are scalar and not lists or repeated values
+for col in ['TotalEnrolment', 'TOD', 'CBE', 'CountyName', 'Role']:
+    df[col] = df[col].apply(lambda x: x[0] if isinstance(x, list) else x)
+
+
+# Keep  while keeping subjects as list
+agg_funcs = {
+    'MajorSubject': list,
+    'MinorSubject': list,
+    'TotalEnrolment': 'first',
+    'TOD': 'first', 
+    'CBE' : 'first',
+    'CountyName': 'first',
+    'Role': 'first',
+}
+
+df = df.groupby('Institution_Name').agg(agg_funcs).reset_index()
 # Preprocessing by removing the nulls
 df = df.dropna ()
 
