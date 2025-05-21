@@ -249,36 +249,38 @@ selected_school = st.selectbox(
 school_data = subject_shortages_df.loc[selected_school]
 
 
-# Display key metrics
+# Key Metrics
+st.markdown("---")
 col1, col2, col3 = st.columns(3)
-col1.metric("Enrollment", int(school_data["Enrollment"]))
-col2.metric("Total On Duty (TOD)", int(school_data["TOD"]))
-col3.metric("Policy CBE", int(school_data["PolicyCBE"]))
+with col1:
+    st.markdown(f'<div class="metric-box"><h3>📊 Enrollment</h3><p class="highlight">{int(school_data["Enrollment"]):,}</p></div>', unsafe_allow_html=True)
+with col2:
+    st.markdown(f'<div class="metric-box"><h3>📌 Policy CBE</h3><p class="highlight">{int(school_data["PolicyCBE"])}</p></div>', unsafe_allow_html=True)
+with col3:
+    st.markdown(f'<div class="metric-box"><h3>🏫 Likely Streams</h3><p class="highlight">{int(school_data["LikelyStreams"])}</p></div>', unsafe_allow_html=True)
 
-# Display subject-wise teacher shortages
-st.subheader("📊 Subject-wise Shortages")
-shortage_dict = school_data["SubjectShortages"]
-shortage_df = pd.DataFrame.from_dict(shortage_dict, orient='index', columns=["Shortage"])
-st.dataframe(shortage_df[shortage_df["Shortage"] > 0])
+# Subject Data Display
+st.markdown("---")
+col_left, col_right = st.columns(2)
 
-# Stylized Recommendation Certificate
-st.markdown("### 📝 Recruitment Recommendation")
-st.markdown(
-    f"""
-    <div style='
-        border: 2px solid #4b6cb7; 
-        padding: 2rem; 
-        background-color: #e8f0fe;
-        border-radius: 10px;
-        text-align: center;
-        font-size: 18px;
-        font-family: Georgia, serif;
-        color: #182848;
-        '>
-        <strong>This is to recommend the recruitment of:</strong><br><br>
-        <span style='font-size: 22px; font-weight: bold;'>{school_data['Recommendation']}</span><br><br>
-        <em>To meet the policy CBE of {int(school_data['PolicyCBE'])} teachers.</em>
-    </div>
-    """, unsafe_allow_html=True
-)
+with col_left:
+    st.subheader("👨🏫 Current Teacher Allocation")
+    actual_df = pd.DataFrame.from_dict(school_data['ActualTeachers'], orient='index', columns=['Teachers'])
+    st.dataframe(
+        actual_df.style.highlight_max(axis=0, color='#c8e6c9'),
+        use_container_width=True,
+        height=400
+    )
 
+with col_right:
+    st.subheader("⚠️ Teacher Shortages")
+    shortage_df = pd.DataFrame.from_dict(school_data['SubjectShortages'], orient='index', columns=['Shortage'])
+    st.dataframe(
+        shortage_df.style.applymap(lambda x: 'background-color: #ffcdd2' if x > 0 else ''),
+        use_container_width=True,
+        height=400
+    )
+
+# Recommendation Section
+st.markdown("---")
+st.markdown(f'<div class="recommendation"><h3>📋 Staffing Recommendation</h3><p>{school_data["Recommendation"]}</p></div>', unsafe_allow_html=True)
