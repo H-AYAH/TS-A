@@ -134,58 +134,21 @@ def calculate_subject_shortage_full_output(school_row):
             enrollment = enrollment_list[0]
     else:
         enrollment = enrollment_list
-
     # Fallback in case of missing/NaN
     if pd.isna(enrollment):
         enrollment = 0
-
     # Estimate streams
     streams = math.ceil(enrollment / 45)
-
     # Policy required teachers per subject
     required_teachers = {
         subject: math.ceil(streams * load)
         for subject, load in subject_teacher_per_class.items()
     }
-
     # Flatten major/minor subjects
     major_subjects = school_row['MajorSubject']
     minor_subjects = school_row['MinorSubject']
-
     if major_subjects and isinstance(major_subjects[0], list):
-        major_subjects = [item for sublist in major_subjects for item in sublist]
-    if minor_subjects and isinstance(minor_subjects[0], list):
-        minor_subjects = [item for sublist in minor_subjects for item in sublist]
 
-    major_counts = Counter(major_subjects)
-    minor_counts = Counter(minor_subjects)
-    all_subjects = major_counts + minor_counts
-    actual_counts = dict(Counter (all_subjects))
-
-    # Calculate shortages and prepare recommendation
-    shortages = {}
-    recommendations = []
-
-    for subject, required in required_teachers.items():
-        actual = actual_counts.get(subject, 0)
-        shortage = math.ceil(required - actual)
-        if shortage > 0:
-            recommendations.append(f"{int(shortage)} {subject}")
-        shortages[subject] = shortage
-
-    # Assemble full output
-    output = {
-        "Institution_Name": school_row["Institution_Name"],
-        "Enrollment": enrollment,
-        "TOD": int(school_row.get("TOD", [0])[0]) if isinstance(school_row.get("TOD"), list) else int(school_row.get("TOD", 0)),
-        "PolicyCBE": get_policy_cbe(enrollment),
-        "LikelyStreams": calculate_likely_streams(get_policy_cbe(enrollment)),
-        "ActualTeachers": actual_counts,
-        "SubjectShortages": shortages,
-        "Recommendation": "Recruit " + ", ".join(recommendations) if recommendations else "No recruitment needed"
-    }
-
-    return pd.Series(output)
 subject_shortages_df = df.apply(calculate_subject_shortage_full_output, axis=1)
 subject_shortages_df['Institution_Name'] = df['Institution_Name']
 
