@@ -10,6 +10,8 @@ import math
 csv_url = "https://raw.githubusercontent.com/H-AYAH/Teachershortage-app/main/SchoolsSecondary_11.csv"
 df = pd.read_csv(csv_url)
 
+#preprocessing
+# df = df.dropna ()
 
 # If columns contain lists (e.g., from reading CSV with object dtype), flatten them
 for col in ['MajorSubject', 'MinorSubject']:
@@ -245,3 +247,38 @@ selected_school = st.selectbox(
     help="Choose an institution to view detailed staffing analysis"
 )
 school_data = subject_shortages_df.loc[selected_school]
+
+
+# Display key metrics
+col1, col2, col3 = st.columns(3)
+col1.metric("Enrollment", int(school_data["Enrollment"]))
+col2.metric("Total On Duty (TOD)", int(school_data["TOD"]))
+col3.metric("Policy CBE", int(school_data["PolicyCBE"]))
+
+# Display subject-wise teacher shortages
+st.subheader("📊 Subject-wise Shortages")
+shortage_dict = school_data["SubjectShortages"]
+shortage_df = pd.DataFrame.from_dict(shortage_dict, orient='index', columns=["Shortage"])
+st.dataframe(shortage_df[shortage_df["Shortage"] > 0])
+
+# Stylized Recommendation Certificate
+st.markdown("### 📝 Recruitment Recommendation")
+st.markdown(
+    f"""
+    <div style='
+        border: 2px solid #4b6cb7; 
+        padding: 2rem; 
+        background-color: #e8f0fe;
+        border-radius: 10px;
+        text-align: center;
+        font-size: 18px;
+        font-family: Georgia, serif;
+        color: #182848;
+        '>
+        <strong>This is to recommend the recruitment of:</strong><br><br>
+        <span style='font-size: 22px; font-weight: bold;'>{school_data['Recommendation']}</span><br><br>
+        <em>To meet the policy CBE of {int(school_data['PolicyCBE'])} teachers.</em>
+    </div>
+    """, unsafe_allow_html=True
+)
+
