@@ -357,7 +357,7 @@ def main():
     
     # County-wide Analysis Option
     def county_wide_analysis(df, analysis):
-    st.markdown("---")
+        st.markdown("---")
     if st.button("🗺️ View County-wide Analysis"):
         county_name = analysis['County']
         county_schools = df[df['CountyName'] == county_name]
